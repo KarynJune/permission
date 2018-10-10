@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>login</title>
+    <script src="/static/js/index.js"></script>
+</head>
+<body>
+regist:
+<form method="post" action="/user/">
+    {% csrf_token %}
+    username:<input name="username" type="text">
+    password:<input name="password" type="password">
+    <input type="submit" value="add">
+</form>
+<br>
+login:
+<form method="post" action="/login/">
+    {% csrf_token %}
+    username:<input name="username" type="text">
+    password:<input name="password" type="password">
+    <input type="submit" value="login">
+</form>
+</body>
+</html>
