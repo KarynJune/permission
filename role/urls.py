@@ -22,9 +22,11 @@ import views
 
 router = routers.DefaultRouter()
 router.register(r'user', views.UserViewSet)
+router.register(r'data', views.SomeDataViewSet)
 
 urlpatterns = [
     url(r'^', include(router.urls)),
     url(r'^login/', views.to_login),
+    url(r'^logout/', views.to_logout),
     url(r'^index/', views.to_index),
 ]

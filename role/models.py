@@ -8,8 +8,19 @@ from rest_framework import serializers
 # Create your models here.
 
 
+class SomeData(models.Model):
+    name = models.CharField(max_length=255)
+
+
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
         fields = ('id', 'username', 'password')
+
+
+class SomeDataSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = SomeData
+        fields = ('id', 'name')

@@ -53,8 +53,6 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'permission.urls'
 
-AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.ModelBackend',)
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -126,3 +124,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
+
+
+# login setting
+AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.ModelBackend',)
+LOGIN_URL = '/login/'
