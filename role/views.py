@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate, login, logout
 from rest_framework import viewsets
 from rest_framework.response import Response
 
-from models import UserSerializer,SomeData, SomeDataSerializer
+from models import UserSerializer, GroupSerializer, PermissionSerializer, SomeData, SomeDataSerializer
 from permission import IsAdminOrReadOnly
 
 # Create your views here.
@@ -19,18 +19,20 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
     def create(self, request, *args, **kwargs):
-        super(UserViewSet, self).create(request, *args, **kwargs)
-        role_name = '管理员'
-        try:
-            Group.objects.get(name=role_name)
-        except Group.DoesNotExist:
-            groups = Group.objects.create(name=role_name)
-            groups.permissions.add(Permission.objects.get(codename='add_somedata'))
-            user = User.objects.get(username=request.POST['username'], password=request.POST['password'])
-            if user is not None:
-                user.groups.add(groups)
+        User.objects.create_user(username=request.POST['username'], password=request.POST['password'])
         to_login(request)
-        return redirect("/index/")
+
+
+class GroupViewSet(viewsets.ModelViewSet):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    permission_classes = (IsAdminOrReadOnly,)
+
+
+class PermissionViewSet(viewsets.ModelViewSet):
+    queryset = Permission.objects.all()
+    serializer_class = PermissionSerializer
+    permission_classes = (IsAdminOrReadOnly,)
 
 
 class SomeDataViewSet(viewsets.ModelViewSet):
@@ -41,7 +43,7 @@ class SomeDataViewSet(viewsets.ModelViewSet):
 
 def to_login(request):
     if request.method == 'POST':
-        user = User.objects.get(username=request.POST['username'], password=request.POST['password'])
+        user = authenticate(username=request.POST['username'], password=request.POST['password'])
         if user is not None:
             login(request, user)
         return redirect("/index/")
@@ -56,7 +58,4 @@ def to_logout(request):
 
 @login_required
 def to_index(request):
-    if request.method == 'POST':
-        Response()
-    else:
-        return render(request, "index.html")
+    return render(request, "index.html", {"groups": Group.objects.all()})

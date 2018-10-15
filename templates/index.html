@@ -7,11 +7,20 @@
 </head>
 <body>
 welcome! {{ request.user.username }}
+<hr>
+<form method="post" action="/data/">
+{% for group in groups %}
+    <input type="checkbox" {% if group in request.user.groups.all %}checked{% endif %}>{{ group.name }}
+{% endfor %}
+<input type="submit" value="set group">
+</form>
+<hr>
 <form method="post" action="/data/">
     {% csrf_token %}
     <input type="hidden" name="name" value="some data...">
-    <input type="submit" value="create">
+    <input type="submit" value="create data">
 </form>
+<hr>
 <form method="get" action="/logout/">
     <input type="submit" value="logout">
 </form>
