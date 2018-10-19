@@ -19,13 +19,6 @@ import os
 
 # Create your tests here.
 
-CLASS_DIM = 2
-EMB_DIM = 128
-HID_DIM = 512
-STACKED_NUM = 3
-BATCH_SIZE = 128
-USE_GPU = False
-
 good_texts = [
     u"这个东西真心很赞",
     u"很好玩，但是我手残，还是不太习惯，网络有问题，经常999延迟",
