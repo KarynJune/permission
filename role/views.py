@@ -8,8 +8,12 @@ from django.contrib.auth import authenticate, login, logout
 from rest_framework import viewsets
 from rest_framework.response import Response
 
-from models import UserSerializer, GroupSerializer, PermissionSerializer, SomeData, SomeDataSerializer
+from models import UserSerializer, GroupSerializer, PermissionSerializer, SomeData, SomeDataSerializer, Post, \
+    PostSerializers
 from permission import IsAdminOrReadOnly
+import MySQLdb
+import json
+
 
 # Create your views here.
 
@@ -41,6 +45,12 @@ class SomeDataViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminOrReadOnly,)
 
 
+def get_data(page):
+    posts = Post.objects.using("g37").all()[(page - 1) * 100:100 * page]
+    posts_serializers = PostSerializers(posts, many=True)
+    return posts_serializers.data
+
+
 def to_login(request):
     if request.method == 'POST':
         user = authenticate(username=request.POST['username'], password=request.POST['password'])
@@ -58,4 +68,6 @@ def to_logout(request):
 
 @login_required
 def to_index(request):
-    return render(request, "index.html", {"groups": Group.objects.all()})
+    page = int(request.GET.get("page", 1))
+    datas = get_data(page)
+    return render(request, "index.html", {"groups": Group.objects.all(), "datas": datas})
