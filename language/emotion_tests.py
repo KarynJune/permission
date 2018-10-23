@@ -43,6 +43,18 @@ def get_data_from_sql():
     return alldata
 
 
+def get_data_from_zjy():
+    """获取数据"""
+    mysql_cn = MySQLdb.connect(host='10.250.40.99', port=3306, user='root', passwd='88888888', db='zjy_test')
+    sql = "SELECT content,sort FROM language_filterdata where sort!=0"
+    cursor = mysql_cn.cursor()
+    cursor.execute(sql)
+    alldata = cursor.fetchall()
+    cursor.close()
+    mysql_cn.close()
+    return alldata
+
+
 def get_data_self():
     datas = (
         ('吃相难看   甚至简直赤裸裸的骗钱', 1),
@@ -85,9 +97,9 @@ def handle_datas(datas):
     results = []
     for data in datas:
         star = 1
-        if data[1] > 3:
+        if int(data[1]) > 3:
             star = 2
-        elif data[1] < 3:
+        elif int(data[1]) < 3:
             star = 0
         content = data[0]
         if isinstance(content, str):
@@ -347,25 +359,18 @@ def test2(X_train, X_test, y_train, y_test):
     # get_best_param(pipeline)
     pipeline.set_params(clf__alpha=0.1, tfidf__use_idf=False, vect__max_df=0.1, vect__max_features=None)
     pipeline.fit(X_train.cut_word, y_train)
-    y_pred = pipeline.predict(X_test.cut_word)
-    print metrics.accuracy_score(y_test, y_pred)
-    print metrics.confusion_matrix(y_test, y_pred)
+    y_pred = pipeline.predict(X_train.cut_word)
+    print metrics.accuracy_score(y_train, y_pred)
+    print metrics.confusion_matrix(y_train, y_pred)
 
-    datas = get_data_self()
-    datas = handle_datas(datas)
-    features = get_features(datas)
-    df = pd.DataFrame(features)
-    X = df[['cut_word', 'content']]
-    y = df['star']
-    y_pred = pipeline.predict(X.cut_word)
-    print metrics.accuracy_score(y, y_pred)
-    print metrics.confusion_matrix(y, y_pred)
-    for doc, category in zip(X.content, y_pred):
+    y_pred = pipeline.predict_proba(X_test.cut_word)  # 概率
+    for doc, category in zip(X_test.content, y_pred):
         print doc, ":", category
 
 
 if __name__ == '__main__':
     # test()
+    # datas = get_data_from_zjy()
     datas = get_data_from_sql()
     # datas = get_data_self()
     datas = handle_datas(datas)

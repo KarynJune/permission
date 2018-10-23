@@ -3,19 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>index</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+            crossorigin="anonymous"></script>
     <script src="/static/js/index.js"></script>
 </head>
 <body>
 welcome! {{ request.user.username }}
 <hr>
 <form method="post" action="/data/">
-{% for group in groups %}
-    <input type="checkbox" {% if group in request.user.groups.all %}checked{% endif %}>{{ group.name }}
-{% endfor %}
-<input type="submit" value="set group">
+    {% for group in groups %}
+        <input type="checkbox" {% if group in request.user.groups.all %}checked{% endif %}>{{ group.name }}
+    {% endfor %}
+    <input type="submit" value="set group">
 </form>
 <hr>
 <form method="post" action="/data/">
@@ -29,19 +32,57 @@ welcome! {{ request.user.username }}
 </form>
 
 
-<table class="table table-bordered" style="margin: 0 auto;width: 1000px;">
+<table class="table table-bordered" style="margin: 0 auto;width: 1500px;">
     {% for data in datas %}
-    <tr>
-        <td>{{ data.myContent }}</td>
-        <td>
-            <button class="btn btn-default">垃圾</button>
-            <button class="btn btn-danger">积极</button>
-            <button class="btn btn-primary">消极</button>
-            <button class="btn btn-success">中性</button>
-        </td>
-    </tr>
+        <tr>
+            <td style="width: 150px;">{{ data.myDate }}</td>
+            <td>{{ data.score }}</td>
+            <td>{{ data.myContent }}</td>
+            <td style="width: 300px;">
+                <button class="btn btn-default" onclick="sortClick('0', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">垃圾</button>
+                <button class="btn btn-danger" onclick="sortClick('5', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">积极</button>
+                <button class="btn btn-primary" onclick="sortClick('1', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">消极</button>
+                <button class="btn btn-success" onclick="sortClick('3', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">中性</button>
+            </td>
+        </tr>
     {% endfor %}
 </table>
+<nav aria-label="Page navigation" style="position: fixed;top: 100px;right: 0;">
+    <input type="hidden" name="page" value="1">
+    <ul class="pagination">
+        <li>
+            <a href="/index/?page={{ page|add:-1 }}" aria-label="Previous">
+                <span aria-hidden="true">上一页</span>
+            </a>
+        </li>
+        <li>
+            <a href="/index/?page={{ page|add:1 }}" aria-label="Next">
+                <span aria-hidden="true">下一页</span>
+            </a>
+        </li>
+    </ul>
+</nav>
 
 </body>
+<script>
+    var csrf_token = '{{ csrf_token }}';
+    function sortClick(sort, source, post_date, content) {
+        var url = '/filter/data/';
+        $.ajax({
+            url: url,
+            async: false,
+            type: "POST",
+             data: {
+                "content": content.toLowerCase(),
+                "source": source,
+                "sort": sort,
+                "post_date": post_date,
+                "csrfmiddlewaretoken": csrf_token,
+            },
+            success: function (res, status) {
+                console.log(res)
+            }
+        });
+    }
+</script>
 </html>

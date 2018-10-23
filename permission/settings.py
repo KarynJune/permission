@@ -78,8 +78,12 @@ WSGI_APPLICATION = 'permission.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'USER': 'root',
+        'PASSWORD': '88888888',
+        'HOST': '10.250.40.99',
+        'PORT': '3306',
+        'NAME': 'zjy_test',
     },
     'g37': {
         'ENGINE': 'django.db.backends.mysql',
@@ -88,7 +92,7 @@ DATABASES = {
         'HOST': '192.168.42.112',
         'PORT': '3306',
         'NAME': 'g37',
-    }
+    },
 }
 
 
@@ -122,7 +126,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)

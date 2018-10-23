@@ -22,7 +22,6 @@ import views
 
 router = routers.DefaultRouter()
 router.register(r'user', views.UserViewSet)
-router.register(r'data', views.SomeDataViewSet)
 router.register(r'group', views.GroupViewSet)
 router.register(r'permission', views.GroupViewSet)
 

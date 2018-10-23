@@ -18,3 +18,11 @@ from django.contrib import admin
 from rest_framework import routers
 
 import views
+
+router = routers.DefaultRouter()
+router.register(r'data', views.SomeDataViewSet)
+router.register(r'filter/data', views.FilterDataViewSet)
+
+urlpatterns = [
+    url(r'^', include(router.urls)),
+]
