@@ -6,75 +6,183 @@ from django.test import TestCase
 import paddle
 import paddle.fluid as fluid
 import numpy
+from functools import partial
+import math
+import os
+import sys
 
 
-# Configure the neural network.
-def net(x, y):
-    y_predict = fluid.layers.fc(input=x, size=1, act=None)
-    cost = fluid.layers.square_error_cost(input=y_predict, label=y)
+EMBED_SIZE = 32  # word vector dimension
+HIDDEN_SIZE = 256  # hidden layer dimension
+N = 5  # train 5-gram
+BATCH_SIZE = 32  # batch size
+
+# can use CPU or GPU
+use_cuda = os.getenv('WITH_GPU', '0') != '0'
+
+word_dict = paddle.dataset.imikolov.build_dict()
+dict_size = len(word_dict)
+print "dict size:", dict_size
+
+def inference_program(is_sparse):
+    first_word = fluid.layers.data(name='firstw', shape=[1], dtype='int64')
+    second_word = fluid.layers.data(name='secondw', shape=[1], dtype='int64')
+    third_word = fluid.layers.data(name='thirdw', shape=[1], dtype='int64')
+    fourth_word = fluid.layers.data(name='fourthw', shape=[1], dtype='int64')
+
+    embed_first = fluid.layers.embedding(
+        input=first_word,
+        size=[dict_size, EMBED_SIZE],
+        dtype='float32',
+        is_sparse=is_sparse,
+        param_attr='shared_w')
+    embed_second = fluid.layers.embedding(
+        input=second_word,
+        size=[dict_size, EMBED_SIZE],
+        dtype='float32',
+        is_sparse=is_sparse,
+        param_attr='shared_w')
+    embed_third = fluid.layers.embedding(
+        input=third_word,
+        size=[dict_size, EMBED_SIZE],
+        dtype='float32',
+        is_sparse=is_sparse,
+        param_attr='shared_w')
+    embed_fourth = fluid.layers.embedding(
+        input=fourth_word,
+        size=[dict_size, EMBED_SIZE],
+        dtype='float32',
+        is_sparse=is_sparse,
+        param_attr='shared_w')
+
+    concat_embed = fluid.layers.concat(
+        input=[embed_first, embed_second, embed_third, embed_fourth], axis=1)
+    hidden1 = fluid.layers.fc(input=concat_embed,
+                              size=HIDDEN_SIZE,
+                              act='sigmoid')
+    predict_word = fluid.layers.fc(input=hidden1, size=dict_size, act='softmax')
+    return predict_word
+
+
+def train_program(is_sparse):
+    # The declaration of 'next_word' must be after the invoking of inference_program,
+    # or the data input order of train program would be [next_word, firstw, secondw,
+    # thirdw, fourthw], which is not correct.
+    predict_word = inference_program(is_sparse)
+    next_word = fluid.layers.data(name='nextw', shape=[1], dtype='int64')
+    cost = fluid.layers.cross_entropy(input=predict_word, label=next_word)
     avg_cost = fluid.layers.mean(cost)
-    return y_predict, avg_cost
+    return avg_cost
 
 
-# Define train function.
-def train(save_dirname):
-    x = fluid.layers.data(name='x', shape=[13], dtype='float32')
-    y = fluid.layers.data(name='y', shape=[1], dtype='float32')
-    y_predict, avg_cost = net(x, y)
-    sgd_optimizer = fluid.optimizer.SGD(learning_rate=0.001)
-    sgd_optimizer.minimize(avg_cost)
+def optimizer_func():
+    # Note here we need to choose more sophisticated optimizers
+    # such as AdaGrad with a decay rate. The normal SGD converges
+    # very slowly.
+    # optimizer=fluid.optimizer.SGD(learning_rate=0.001),
+    return fluid.optimizer.AdagradOptimizer(
+        learning_rate=3e-3,
+        regularization=fluid.regularizer.L2DecayRegularizer(8e-4))
+
+
+def train(use_cuda, train_program, params_dirname):
     train_reader = paddle.batch(
-        paddle.reader.shuffle(paddle.dataset.uci_housing.train(), buf_size=500),
-        batch_size=20)
-    place = fluid.CPUPlace()
-    exe = fluid.Executor(place)
+        paddle.dataset.imikolov.train(word_dict, N), BATCH_SIZE)
+    test_reader = paddle.batch(
+        paddle.dataset.imikolov.test(word_dict, N), BATCH_SIZE)
 
-    def train_loop(main_program):
-        feeder = fluid.DataFeeder(place=place, feed_list=[x, y])
-        exe.run(fluid.default_startup_program())
+    place = fluid.CUDAPlace(0) if use_cuda else fluid.CPUPlace()
 
-        PASS_NUM = 1000
-        for pass_id in range(PASS_NUM):
-            total_loss_pass = 0
-            for data in train_reader():
-                avg_loss_value, = exe.run(
-                    main_program, feed=feeder.feed(data), fetch_list=[avg_cost])
-                total_loss_pass += avg_loss_value
-                if avg_loss_value < 5.0:
-                    if save_dirname is not None:
-                        fluid.io.save_inference_model(
-                            save_dirname, ['x'], [y_predict], exe)
-                    return
-            print("Pass %d, total avg cost = %f" % (pass_id, total_loss_pass))
+    def event_handler(event):
+        if isinstance(event, fluid.EndStepEvent):
+            # We output cost every 10 steps.
+            if event.step % 10 == 0:
+                outs = trainer.test(
+                    reader=test_reader,
+                    feed_order=['firstw', 'secondw', 'thirdw', 'fourthw', 'nextw'])
+                avg_cost = outs[0]
 
-    train_loop(fluid.default_main_program())
+                print("Step %d: Average Cost %f" % (event.step, avg_cost))
 
+                # If average cost is lower than 5.8, we consider the model good enough to stop.
+                # Note 5.8 is a relatively high value. In order to get a better model, one should
+                # aim for avg_cost lower than 3.5. But the training could take longer time.
+                if avg_cost < 5.8:
+                    trainer.save_params(params_dirname)
+                    trainer.stop()
 
-# Infer by using provided test data.
-def infer(save_dirname=None):
-    place = fluid.CPUPlace()
-    exe = fluid.Executor(place)
-    inference_scope = fluid.core.Scope()
-    with fluid.scope_guard(inference_scope):
-        [inference_program, feed_target_names, fetch_targets] = (
-            fluid.io.load_inference_model(save_dirname, exe))
-        test_reader = paddle.batch(paddle.dataset.uci_housing.test(), batch_size=20)
+                if math.isnan(avg_cost):
+                    sys.exit("got NaN loss, training failed.")
 
-        test_data = test_reader().next()
-        test_feat = numpy.array(map(lambda x: x[0], test_data)).astype("float32")
-        test_label = numpy.array(map(lambda x: x[1], test_data)).astype("float32")
+    trainer = fluid.Trainer(
+        train_func=train_program,
+        optimizer_func=optimizer_func,
+        place=place)
 
-        results = exe.run(inference_program,
-                          feed={feed_target_names[0]: numpy.array(test_feat)},
-                          fetch_list=fetch_targets)
-        print("infer results: ", results[0])
-        print("ground truth: ", test_label)
+    trainer.train(
+        reader=train_reader,
+        num_epochs=1,
+        event_handler=event_handler,
+        feed_order=['firstw', 'secondw', 'thirdw', 'fourthw', 'nextw'])
 
 
-# Run train and infer.
-if __name__ == "__main__":
-    save_dirname = "fit_a_line.inference.model"
-    train(save_dirname)
-    infer(save_dirname)
+def infer(use_cuda, inference_program, params_dirname=None):
+    place = fluid.CUDAPlace(0) if use_cuda else fluid.CPUPlace()
+    inferencer = fluid.Inferencer(
+        infer_func=inference_program, param_path=params_dirname, place=place)
 
+    # Setup inputs by creating 4 LoDTensors representing 4 words. Here each word
+    # is simply an index to look up for the corresponding word vector and hence
+    # the shape of word (base_shape) should be [1]. The length-based level of
+    # detail (lod) info of each LoDtensor should be [[1]] meaning there is only
+    # one lod_level and there is only one sequence of one word on this level.
+    # Note that lod info should be a list of lists.
+
+    data1 = [[211]]  # 'among'
+    data2 = [[6]]    # 'a'
+    data3 = [[96]]   # 'group'
+    data4 = [[4]]    # 'of'
+    lod = [[1]]
+
+    first_word  = fluid.create_lod_tensor(data1, lod, place)
+    second_word = fluid.create_lod_tensor(data2, lod, place)
+    third_word  = fluid.create_lod_tensor(data3, lod, place)
+    fourth_word = fluid.create_lod_tensor(data4, lod, place)
+
+    result = inferencer.infer(
+        {
+            'firstw': first_word,
+            'secondw': second_word,
+            'thirdw': third_word,
+            'fourthw': fourth_word
+        },
+        return_numpy=False)
+
+    print(numpy.array(result[0]))
+    most_possible_word_index = numpy.argmax(result[0])
+    print(most_possible_word_index)
+    print([
+        key for key, value in word_dict.iteritems()
+        if value == most_possible_word_index
+    ][0])
+
+
+def main(use_cuda, is_sparse):
+    if use_cuda and not fluid.core.is_compiled_with_cuda():
+        return
+
+    params_dirname = "word2vec.inference.model"
+
+    train(
+        use_cuda=use_cuda,
+        train_program=partial(train_program, is_sparse),
+        params_dirname=params_dirname)
+
+    infer(
+        use_cuda=use_cuda,
+        inference_program=partial(inference_program, is_sparse),
+        params_dirname=params_dirname)
+
+
+main(use_cuda=use_cuda, is_sparse=True)
 
