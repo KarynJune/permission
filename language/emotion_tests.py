@@ -96,10 +96,14 @@ def handle_datas(datas):
     r = '{机器型号:[\s\S]*?}|回复：[\s\S]*'
     results = []
     for data in datas:
-        star = 1
+        # star = 1
+        # if int(data[1]) > 3:
+        #     star = 2
+        # elif int(data[1]) < 3:
+        #     star = 0
         if int(data[1]) > 3:
             star = 2
-        elif int(data[1]) < 3:
+        else:
             star = 0
         content = data[0]
         if isinstance(content, str):
@@ -160,7 +164,7 @@ def split_datas(datas):
     df = pd.DataFrame(datas)
     X = df[['cut_word', 'content']]
     y = df['star']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=None)
     print X_train.head()
     return X_train, X_test, y_train, y_test
 
@@ -325,7 +329,7 @@ def test1(X_train, X_test, y_train, y_test):
 def get_best_param(pipeline):
     """找到分类器最佳参数"""
     parameters = {
-        'vect__max_df': (0.1, 0.8),
+        'vect__max_df': (0.1, 0.9),
         'vect__max_features': (None, 5000, 10000),
         'tfidf__use_idf': (True, False),
         'clf__alpha': (1, 0.1, 0.01, 0.001, 0.0001),
@@ -357,21 +361,25 @@ def test2(X_train, X_test, y_train, y_test):
         ('clf', MultinomialNB()),
     ])
     # get_best_param(pipeline)
-    pipeline.set_params(clf__alpha=0.1, tfidf__use_idf=False, vect__max_df=0.1, vect__max_features=None)
+    pipeline.set_params(clf__alpha=1, tfidf__use_idf=False, vect__max_df=0.1, vect__max_features=None)
     pipeline.fit(X_train.cut_word, y_train)
     y_pred = pipeline.predict(X_train.cut_word)
     print metrics.accuracy_score(y_train, y_pred)
     print metrics.confusion_matrix(y_train, y_pred)
 
+    y_pred = pipeline.predict(X_test.cut_word)
+    print metrics.accuracy_score(y_test, y_pred)
+    print metrics.confusion_matrix(y_test, y_pred)
+
     y_pred = pipeline.predict_proba(X_test.cut_word)  # 概率
-    for doc, category in zip(X_test.content, y_pred):
-        print doc, ":", category
+    # for doc, category in zip(X_test.content, y_pred):
+    #     print doc, ":", category
 
 
 if __name__ == '__main__':
     # test()
-    # datas = get_data_from_zjy()
-    datas = get_data_from_sql()
+    datas = get_data_from_zjy()
+    # datas = get_data_from_sql()
     # datas = get_data_self()
     datas = handle_datas(datas)
     features = get_features(datas)

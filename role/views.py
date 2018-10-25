@@ -54,8 +54,8 @@ def to_logout(request):
     return redirect("/login/")
 
 
-@login_required
-def to_index(request):
+# @login_required
+def to_index(request, product_code):
     page = int(request.GET.get("page", 1))
-    datas = service.get_data(page)
-    return render(request, "index.html", {"groups": Group.objects.all(), "datas": datas, "page": page})
+    datas = service.get_data(page, product_code)
+    return render(request, "index.html", {"groups": Group.objects.all(), "datas": datas, "page": page, "product_code": product_code})

@@ -29,5 +29,5 @@ urlpatterns = [
     url(r'^', include(router.urls)),
     url(r'^login/', views.to_login),
     url(r'^logout/', views.to_logout),
-    url(r'^index/', views.to_index),
+    url(r'^index/(?P<product_code>\w+)', views.to_index),
 ]

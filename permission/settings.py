@@ -85,14 +85,14 @@ DATABASES = {
         'PORT': '3306',
         'NAME': 'zjy_test',
     },
-    'g37': {
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': 'unimonitor',
-        'PASSWORD': 'unimonitor',
-        'HOST': '192.168.42.112',
-        'PORT': '3306',
-        'NAME': 'g37',
-    },
+    # 'g37': {
+    #     'ENGINE': 'django.db.backends.mysql',
+    #     'USER': 'unimonitor',
+    #     'PASSWORD': 'unimonitor',
+    #     'HOST': '192.168.42.112',
+    #     'PORT': '3306',
+    #     'NAME': 'g37',
+    # },
 }
 
 
@@ -140,4 +140,4 @@ STATICFILES_DIRS = [
 
 # login setting
 AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.ModelBackend',)
-LOGIN_URL = '/login/'
+# LOGIN_URL = '/login/'

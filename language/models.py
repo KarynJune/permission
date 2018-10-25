@@ -61,9 +61,10 @@ class FilterData(models.Model):
     post_date = models.DateTimeField(null=True)
     source = models.CharField(max_length=255)
     sort = models.CharField(max_length=255)
+    product = models.CharField(max_length=255, default='g37')
 
 
 class FilterDataSerializers(serializers.ModelSerializer):
     class Meta:
         model = FilterData
-        fields = ('id', 'content', 'post_date', 'source', 'sort')
+        fields = ('id', 'content', 'post_date', 'source', 'sort', 'product')

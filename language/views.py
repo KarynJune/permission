@@ -20,7 +20,7 @@ class SomeDataViewSet(viewsets.ModelViewSet):
 class FilterDataViewSet(viewsets.ModelViewSet):
     queryset = FilterData.objects.all()
     serializer_class = FilterDataSerializers
-    permission_classes = (IsAdminOrReadOnly,)
+    # permission_classes = (IsAdminOrReadOnly,)
 
 
 
