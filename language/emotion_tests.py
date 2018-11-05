@@ -140,13 +140,15 @@ def cut_word(text):
 def get_features(datas):
     """获取特征集"""
     features = []
-    word_list = []
+    # word_list = []
     for data in datas:
         cut_words = cut_word(data[0]).split()
-        # cut_words = tuple(bigram_words(cut_words))
-        word_list += cut_words
+        bigram_finder = BigramCollocationFinder.from_words(cut_words)
+        bigrams = sorted(bigram_finder.ngram_fd.items(), key=lambda t: (-t[1], t[0]))
 
-        features.append({"content": data[0], "cut_word":" ".join(cut_words), "star": data[1]})
+        # word_list += [words[0] for words in bigrams]
+
+        features.append({"content": data[0], "cut_word": " ".join(cut_words), "star": data[1]})
 
     # freqs = cal_freq(word_list)
     # words = freqs.items()
@@ -166,6 +168,7 @@ def split_datas(datas):
     y = df['star']
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=None)
     print X_train.head()
+    print type(X_train.cut_word.head())
     return X_train, X_test, y_train, y_test
 
 
@@ -205,10 +208,8 @@ def snowNLP(text):
 def split_snownlp(x):
     if x>0.7:
         return 2
-    elif x<0.3:
-        return 0
     else:
-        return 1
+        return 0
 
 
 def _transfer(x):
@@ -304,10 +305,10 @@ def test1(X_train, X_test, y_train, y_test):
 
     '''连接特征标准化、分类器（朴素贝叶斯）'''
     pipe = make_pipeline(vect, MultinomialNB())
-    print pipe.steps
+    # print pipe.steps
 
     '''交叉验证：计算模型准确率均值'''
-    print cross_val_score(pipe, X_train.cut_word, y_train).mean()
+    # print cross_val_score(pipe, X_train.cut_word, y_train).mean()
     '''拟合模型'''
     pipe.fit(X_train.cut_word, y_train)
 
@@ -318,10 +319,10 @@ def test1(X_train, X_test, y_train, y_test):
     # for doc, category in zip(X_test.content, y_pred):
     #     print doc, ":", category
 
-    y_pred_snownlp = X_test.content.apply(snowNLP)
-    y_pred_snownlp_normalized = y_pred_snownlp.apply(split_snownlp)
-    print metrics.accuracy_score(y_test, y_pred_snownlp_normalized)
-    print metrics.confusion_matrix(y_test, y_pred_snownlp_normalized)
+    # y_pred_snownlp = X_test.content.apply(snowNLP)
+    # y_pred_snownlp_normalized = y_pred_snownlp.apply(split_snownlp)
+    # print metrics.accuracy_score(y_test, y_pred_snownlp_normalized)
+    # print metrics.confusion_matrix(y_test, y_pred_snownlp_normalized)
     # for doc, category in zip(X_test.content, y_pred_snownlp_normalized):
     #     print doc, ":", category
 
@@ -364,6 +365,7 @@ def test2(X_train, X_test, y_train, y_test):
     pipeline.set_params(clf__alpha=1, tfidf__use_idf=False, vect__max_df=0.1, vect__max_features=None)
     pipeline.fit(X_train.cut_word, y_train)
     y_pred = pipeline.predict(X_train.cut_word)
+
     print metrics.accuracy_score(y_train, y_pred)
     print metrics.confusion_matrix(y_train, y_pred)
 
