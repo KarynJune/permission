@@ -84,9 +84,10 @@ if __name__ == '__main__':
     # for tw in trible_words:
     #     print tw[0], ",", tw[1], ",", tw[2]
     bigram_finder = BigramCollocationFinder.from_words(words)  # 把文本变成双词搭配的形式
-    bigrams = sorted(bigram_finder.ngram_fd.items(), key=lambda t: (-t[1], t[0]))[:100]
+    bigrams = sorted(bigram_finder.ngram_fd.items(), key=lambda t: (-t[1], t[0]))
     for bigram in bigrams:
-        print bigram[0][0],",",bigram[0][1],":",bigram[1]
+        if bigram[1]>5:
+            print bigram[0][0],",",bigram[0][1],":",bigram[1]
     # score_fn = BigramAssocMeasures.chi_sq
     # bigrams = bigram_finder.nbest(score_fn, 100)
     # for bigram in bigrams:
