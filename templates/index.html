@@ -12,6 +12,11 @@
             crossorigin="anonymous"></script>
     <script src="/static/js/index.js"></script>
 </head>
+<style>
+    .table tr:hover{
+        background: #eeeeee;
+    }
+</style>
 <body>
 <!--welcome! {{ request.user.username }}
 <hr>
@@ -32,22 +37,55 @@
     <input type="submit" value="logout">
 </form>
 -->
+<div class="outer" style="margin: 80px auto;width: 1500px;">
+<div class="form-inline" style="position: fixed;top: 0;padding: 20px 0;background: #fff;width: 100%;">
+<div class="form-group">
+<input type="text" class="form-control" name="text" size="80" placeholder="请输入评论...">
+<button type="button" id="emotionBtn" data-loading-text="预测中..." class="btn btn-primary" autocomplete="off">
+    情感预测
+</button>
+</div>
+    <div class="form-group">
+        <label>测试结果(正面占比)：</label><span class="emotionResult">无</span>
+    </div>
+</div>
 
-<table class="table table-bordered" style="margin: 50px auto;width: 1500px;">
+<button type="button" id="emotionTrainBtn" data-loading-text="训练中..." class="btn btn-primary" autocomplete="off">
+    重新训练
+</button>
+<small>大约需要30秒，不影响其他操作</small>
+
+<table class="table table-bordered">
+    <tr>
+        <th>预测</th>
+        <th>发表日期</th>
+        <th width="50px">星级</th>
+        <th>内容</th>
+        <th>操作</th>
+    </tr>
     {% for data in datas %}
         <tr>
+            <td width="120px" class="predict-result">predict...</td>
+{#            <td class="words"></td>#}
             <td style="width: 150px;">{{ data.myDate }}</td>
             <td>{{ data.score }}</td>
-            <td>{{ data.myContent }}</td>
+            <td class="predict-content">{{ data.myContent }}</td>
             <td style="width: 300px;">
-                <button class="btn btn-default" onclick="sortClick('0', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">垃圾</button>
-                <button class="btn btn-danger" onclick="sortClick('5', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">积极</button>
-                <button class="btn btn-primary" onclick="sortClick('1', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">消极</button>
-                <button class="btn btn-success" onclick="sortClick('3', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">中性</button>
+                <button class="btn btn-default"
+                        onclick="sortClick('0', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">垃圾
+                </button>
+                <button class="btn btn-danger"
+                        onclick="sortClick('5', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">积极
+                </button>
+                <button class="btn btn-primary"
+                        onclick="sortClick('1', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">消极
+                </button>
+                {#                <button class="btn btn-success" onclick="sortClick('3', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">中性</button>#}
             </td>
         </tr>
     {% endfor %}
 </table>
+</div>
 <nav aria-label="Page navigation" style="position: fixed;top: 100px;right: 0;">
     <input type="hidden" name="page" value="1">
     <ul class="pagination">
@@ -67,13 +105,61 @@
 </body>
 <script>
     var csrf_token = '{{ csrf_token }}';
+
+    $(function () {
+        $('#emotionBtn').on('click', function () {
+            var text = $("input[name=text]").val();
+            if(text==="")return false;
+            var $btn = $(this).button('loading');
+            var url = '/emotion/';
+            $.post(url,{
+                "content_arr":[$("input[name=text]").val()]
+            },function (data) {
+                console.log(data)
+                var text = data[0].pred;
+                $(".emotionResult").html(text+sortText(text));
+                $btn.button('reset')
+            });
+        });
+        $('#emotionTrainBtn').on('click', function () {
+            var isTrue = confirm("确认要重新训练当前模型吗？");
+            if(!isTrue)return false;
+            var $btn = $(this).button('loading');
+            var url = '/retrain/';
+            $.get(url,function (data) {
+                console.log(data);
+                alert("训练成功");
+                $btn.button('reset');
+                location.reload();
+            });
+        });
+
+        var content_arr=[];
+        $(".table .predict-result").each(function () {
+
+            content_arr.push($(this).siblings(".predict-content").text());
+        });
+        var url = '/emotion/';
+        $.post(url,{
+            "content_arr":content_arr
+        },function (data) {
+            console.log(data)
+            $(".table .predict-result").each(function (index,obj) {
+                var pred=data[index].pred;
+                var words=data[index].words;
+                $(this).html(sortText(pred)+Number(pred).toFixed(2));
+                {#$(this).siblings(".words").text(words);#}
+            });
+        });
+    });
+
     function sortClick(sort, source, post_date, content) {
         var url = '/filter/data/';
         $.ajax({
             url: url,
             async: false,
             type: "POST",
-             data: {
+            data: {
                 "content": content.toLowerCase(),
                 "source": source,
                 "sort": sort,
@@ -82,18 +168,26 @@
                 "csrfmiddlewaretoken": csrf_token,
             },
             success: function (res, status) {
-                layer.msg("添加到 "+sortDict()[sort]+" 成功");
-                console.log(res)
+                layer.msg("添加到 " + sortDict()[sort] + " 成功");
+                {#console.log(res)#}
             }
         });
     }
 
+    function sortText(text) {
+        if(Number(text)>0.5){
+            return "<b class='text-danger'>（积极）</b>"
+        }else{
+            return "（消极）"
+        }
+    }
+
     function sortDict() {
         return {
-            "0":"垃圾",
-            "5":"积极",
-            "1":"消极",
-            "3":"中性",
+            "0": "垃圾",
+            "5": "积极",
+            "1": "消极",
+            "3": "中性",
         }
     }
 </script>

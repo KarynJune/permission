@@ -25,4 +25,6 @@ router.register(r'filter/data', views.FilterDataViewSet)
 
 urlpatterns = [
     url(r'^', include(router.urls)),
+    url(r'^emotion/', views.get_emotion_test),
+    url(r'^retrain/', views.retrain),
 ]

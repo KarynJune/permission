@@ -74,8 +74,8 @@ def train_reader(word_dict, datas):
 
 def convolution_net(data, input_dim, class_dim, emb_dim, hid_dim):
     emb = fluid.layers.embedding(input=data, size=[input_dim, emb_dim], is_sparse=True)
-    conv_3 = fluid.nets.sequence_conv_pool(input=emb, num_filters=hid_dim, filter_size=5, act="tanh", pool_type="sqrt")
-    conv_4 = fluid.nets.sequence_conv_pool(input=emb, num_filters=hid_dim, filter_size=5, act="tanh", pool_type="sqrt")
+    conv_3 = fluid.nets.sequence_conv_pool(input=emb, num_filters=hid_dim, filter_size=3, act="tanh", pool_type="sqrt")
+    conv_4 = fluid.nets.sequence_conv_pool(input=emb, num_filters=hid_dim, filter_size=4, act="tanh", pool_type="sqrt")
     prediction = fluid.layers.fc(input=[conv_3, conv_4], size=class_dim, act="softmax")
     return prediction
 
@@ -144,6 +144,9 @@ if __name__ == '__main__':
     datas = get_data_from_sql()
     word_dict = build_dict(datas)
     print "Reading training data...."
+    # train_reader = paddle.batch(
+    #     paddle.reader.shuffle(
+    #         paddle.dataset.imdb.train(word_dict), buf_size=25000), batch_size=BATCH_SIZE)
     train_reader = paddle.batch(
         paddle.reader.shuffle(
             train_reader(word_dict, datas), buf_size=25000), batch_size=BATCH_SIZE)
@@ -159,8 +162,15 @@ if __name__ == '__main__':
     inferencer = fluid.Inferencer(
         infer_func=partial(inference_program, word_dict), param_path=params_dirname, place=place)
 
-    reviews_str = ['因为明日之后，所以我要把所有网易游戏都评一星', '垃圾游戏，不要问我为什么', '真的很棒的手游?下了卸卸了下，终于固定下来了，加油加油']
-    reviews = [cut_word.CutWord(c,'zh').cut() for c in reviews_str]
+    reviews_str = [
+        '因为明日之后，所以我要把所有网易游戏都评一星',
+        '垃圾游戏，不要问我为什么',
+        '真的很棒的手游?下了卸卸了下，终于固定下来了，加油加油'
+    ]
+    # reviews_str = [
+    #     'read the book forget the movie', 'this is a great movie', 'this is very bad'
+    # ]
+    reviews = [c.split() for c in reviews_str]
 
     UNK = word_dict['<unk>']
     lod = []
