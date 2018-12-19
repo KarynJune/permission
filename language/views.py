@@ -11,6 +11,7 @@ import MySQLdb
 
 from keras_learning import service
 
+
 # Create your views here.
 
 
@@ -30,13 +31,11 @@ class FilterDataViewSet(viewsets.ModelViewSet):
 def get_emotion_test(request):
     content_arr = request.POST.getlist('content_arr[]', [])
 
-    preds = service.predict_data(content_arr)
-    return Response(preds)
+    preds, pos_list, neg_list = service.predict_data(content_arr)
+    return Response({"preds": preds, "pos_list": pos_list, "neg_list": neg_list})
 
 
 @api_view(['GET'])
 def retrain(request):
-
     result = service.retrain()
     return Response(result)
-

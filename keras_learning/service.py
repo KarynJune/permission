@@ -5,13 +5,15 @@ import collections
 import numpy as np
 import os
 import commands
+import nltk
+from nltk.util import bigrams, trigrams, skipgrams
 from keras.preprocessing import sequence
 from keras.models import Sequential, load_model, model_from_yaml
 from keras.backend import clear_session
 
 from datas import databases, cut_word
 
-SENTENCE_LENGTH = 50  # 每条数据最大长度（根据实际数据调整，这里取大于平均值）
+SENTENCE_LENGTH = 40  # 每条数据最大长度（根据实际数据调整，这里取大于平均值）
 
 
 def get_data_info(datas):
@@ -37,7 +39,7 @@ def lookup_table(freq_list):
         word2index:{'的': 2, '了': 3, '我': 4,....., '帐关': 3700, '还卡顿': 3701, 'PAD': 0, 'UNK': 1}
         index2word:{2: '的', 3: '了', 4: '我'....., 3700: '帐关', 3701: '还卡顿', 0: 'PAD', 1: 'UNK'}
     """
-    MAX_FEATURES = len(freq_list) - 420  # 去掉词频低的部分数据
+    MAX_FEATURES = len(freq_list) - 720  # 去掉词频低的部分数据
     word2index = {x[0]: i + 2 for i, x in enumerate(freq_list.most_common(MAX_FEATURES))}
     word2index["PAD"] = 0
     word2index["UNK"] = 1
@@ -76,15 +78,23 @@ def predict_data(datas):
 
     clear_session()  # 使用tensorflow作为后端时防止并发需要清除，cntk不用
 
-    model = load_model(os.path.dirname(os.path.realpath(__file__))+'/lstm_model.h5'.encode("utf-8"))
+    model = load_model(os.path.dirname(os.path.realpath(__file__)) + '/lstm_model.h5'.encode("utf-8"))
 
     y = model.predict(sequence_data)
     # return y
     pred_list = []
+    word_list, pos_list, neg_list = [], [], []
     for index, pred in enumerate(y):
-        pred_list.append({"pred":pred[0],"words":"/".join([index2word[x] for x in sequence_data[index] if x != 0])})
+        words = [index2word[x] for x in sequence_data[index] if x != 0 and x != 1]
+        if words:words.append("/")
+        word_list += words
+        if pred >= 0.7:
+            pos_list += words
+        if pred < 0.3:
+            neg_list += words
+        pred_list.append({"pred": pred[0], "words": "/".join(words)})
         # print(pred[0], " :", [index2word[x] for x in sequence_data[index] if x != 0])
-    return pred_list
+    return pred_list, freq_handle(pos_list), freq_handle(neg_list)
 
 
 def retrain():
@@ -92,3 +102,25 @@ def retrain():
     status, output = commands.getstatusoutput(str)
     return status, output
 
+
+def freq_handle(word_list):
+    # freq_list = collections.Counter(word_list)
+    # freq_list = [{"word": word, "count": count} for word,count in freq_list.items() if len(word)>1]
+    # freq_list = sorted(freq_list, key=lambda x: x['count'], reverse=True)[:10]
+
+    # text = nltk.Text(word_list)
+    # double_words = bigrams(word_list)
+    double_words = skipgrams(word_list, 2, 1)
+    double_word_dict = {}
+    for dw in double_words:
+        key = dw[0] + " " + dw[1]
+        if "/" not in key and dw[0]!=dw[1]:
+            try:
+                double_word_dict[key] += 1
+            except KeyError:
+                double_word_dict[key] = 1
+    # double_word_list = [{"word": word, "count": count} for word, count in double_word_dict.items() if count > 1]+freq_list
+    double_word_list = [{"word": word, "count": count} for word, count in double_word_dict.items() if count > 1]
+    double_word_list = sorted(double_word_list, key=lambda x: x['count'], reverse=True)
+
+    return double_word_list

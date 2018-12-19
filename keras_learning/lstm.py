@@ -23,9 +23,9 @@ from datas import databases
 from keras_learning import service
 
 
-SENTENCE_LENGTH = 50  # 每条数据最大长度（根据实际数据调整,这里取大于平均值）
-BATCH_SIZE = 128  # 每次迭代大小（根据训练数据时准确率调整,不宜过小也不宜过大）
-EPOCH = 10  # 迭代次数（根据训练数据时准确率调整）
+SENTENCE_LENGTH = 40  # 每条数据最大长度（根据实际数据调整,这里取大于平均值）
+BATCH_SIZE = 32  # 每次迭代大小（根据训练数据时准确率调整,不宜过小也不宜过大）
+EPOCH = 5  # 迭代次数（根据训练数据时准确率调整）
 
 
 def get_data_info(datas):
@@ -95,19 +95,19 @@ if __name__ == '__main__':
     word2index, index2word = service.lookup_table(freq_list)
     X, y = convert_sequence(datas, word2index)
     """划分数据"""
-    Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size=0.2, random_state=1)
+    Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size=0.1, random_state=1)
     # Xtrain, ytrain = X, y
     # 更换测试数据
     # test_datas = databases.get_data_self()
     # Xtest, ytest = convert_sequence(test_datas, word2index)
 
     """构建网络"""
-    EMBEDDING_SIZE = 256
+    EMBEDDING_SIZE = 128
     HIDDEN_LAYER_SIZE = 64
 
     model = Sequential()
     model.add(Embedding(len(freq_list), EMBEDDING_SIZE, input_length=SENTENCE_LENGTH))
-    model.add(LSTM(HIDDEN_LAYER_SIZE, dropout=0.2, recurrent_dropout=0.2))
+    model.add(LSTM(HIDDEN_LAYER_SIZE, dropout=0.1, recurrent_dropout=0.1))
     model.add(Dense(1))
     model.add(Activation("sigmoid"))
     model.compile(loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"])

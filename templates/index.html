@@ -16,6 +16,9 @@
     .table tr:hover{
         background: #eeeeee;
     }
+    .btn-xs{
+        margin: 3px 5px;
+    }
 </style>
 <body>
 <!--welcome! {{ request.user.username }}
@@ -40,8 +43,12 @@
 <div class="outer" style="margin: 80px auto;width: 1500px;">
 <div class="form-inline" style="position: fixed;top: 0;padding: 20px 0;background: #fff;width: 100%;">
 <div class="form-group">
+<button type="button" id="emotionTrainBtn" data-loading-text="训练中..." class="btn btn-info" autocomplete="off">
+    重新训练
+</button>
+<small>* 更新了新的情感分类可重新训练，大约需要30秒，不影响其他操作</small>
 <input type="text" class="form-control" name="text" size="80" placeholder="请输入评论...">
-<button type="button" id="emotionBtn" data-loading-text="预测中..." class="btn btn-primary" autocomplete="off">
+<button type="button" id="emotionBtn" data-loading-text="预测中..." class="btn btn-success" autocomplete="off">
     情感预测
 </button>
 </div>
@@ -50,18 +57,26 @@
     </div>
 </div>
 
-<button type="button" id="emotionTrainBtn" data-loading-text="训练中..." class="btn btn-primary" autocomplete="off">
-    重新训练
-</button>
-<small>大约需要30秒，不影响其他操作</small>
+
+<div class="row">
+    <div class="col-sm-6" id="pos_list"></div>
+    <div class="col-sm-6" id="neg_list"></div>
+</div>
 
 <table class="table table-bordered">
     <tr>
-        <th>预测</th>
+        <th>
+            <select name="filter" onchange="filterEmotion()">
+                <option value="">全部</option>
+                <option value="5">积极</option>
+                <option value="1">消极</option>
+                <option value="3">中性</option>
+            </select>
+        </th>
         <th>发表日期</th>
         <th width="50px">星级</th>
         <th>内容</th>
-        <th>操作</th>
+        <th>操作<br><small class="text-danger">*预测有误且情感较强烈的可修正，修正后重新训练</small></th>
     </tr>
     {% for data in datas %}
         <tr>
@@ -71,8 +86,7 @@
             <td>{{ data.score }}</td>
             <td class="predict-content">{{ data.myContent }}</td>
             <td style="width: 300px;">
-                <button class="btn btn-default"
-                        onclick="sortClick('0', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">垃圾
+{#                <button class="btn btn-default" onclick="sortClick('0', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">垃圾#}
                 </button>
                 <button class="btn btn-danger"
                         onclick="sortClick('5', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">积极
@@ -116,7 +130,7 @@
                 "content_arr":[$("input[name=text]").val()]
             },function (data) {
                 console.log(data)
-                var text = data[0].pred;
+                var text = data.preds[0].pred;
                 $(".emotionResult").html(text+sortText(text));
                 $btn.button('reset')
             });
@@ -143,17 +157,41 @@
         $.post(url,{
             "content_arr":content_arr
         },function (data) {
-            console.log(data)
+            console.log(data);
+            var preds = data.preds;
+            var pos_list = data.pos_list;
+            var neg_list = data.neg_list;
+
             $(".table .predict-result").each(function (index,obj) {
-                var pred=data[index].pred;
-                var words=data[index].words;
+                var pred=preds[index].pred;
+                var words=preds[index].words;
                 $(this).html(sortText(pred)+Number(pred).toFixed(2));
                 {#$(this).siblings(".words").text(words);#}
             });
+            $.each(pos_list,function (index,obj) {
+                var btn = $("<button class=\"btn btn-xs btn-danger\" type=\"button\">"+obj.word+"</button>").append("<span class=\"badge\">"+obj.count+"</span>");
+                $("#pos_list").append(btn);
+            });
+            $.each(neg_list,function (index,obj) {
+                var btn = $("<button class=\"btn btn-xs btn-primary\" type=\"button\">"+obj.word+"</button>").append("<span class=\"badge\">"+obj.count+"</span>");
+                $("#neg_list").append(btn);
+            });
+
         });
     });
+    
+    function filterEmotion() {
+        $("tr").show();
+        var value = $("select[name=filter]").val();
+        if(value!==''){
+            $(".filter:not(.filter"+value+")").parents("tr").hide();
+        }
+    }
 
     function sortClick(sort, source, post_date, content) {
+        var isTrue = confirm("\""+content+"\" \n=================\n确认要加入到 【"+sortDict()[sort]+"】 吗？\n=================\n *注意要加入预测有误，且情感较强烈的评论噢");
+        if(!isTrue)return false;
+
         var url = '/filter/data/';
         $.ajax({
             url: url,
@@ -175,10 +213,12 @@
     }
 
     function sortText(text) {
-        if(Number(text)>0.5){
-            return "<b class='text-danger'>（积极）</b>"
+        if(Number(text)>=0.7){
+            return "<b class='text-danger filter filter5'>（积极）</b>"
+        }else if(Number(text)>=0.3){
+            return "<span class='filter filter3'>（中性）</span>"
         }else{
-            return "（消极）"
+            return "<span class='filter filter1'>（消极）</span>"
         }
     }
 
