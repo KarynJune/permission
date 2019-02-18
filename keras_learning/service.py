@@ -70,7 +70,7 @@ def convert_sequence(datas, word2index):
 
 def predict_data(datas):
     '''获取序列'''
-    db_datas = databases.get_data_from_sql()
+    db_datas = databases.get_data_from_filter()
     word2index, index2word = lookup_table(get_data_info(db_datas))
     '''预测数据'''
     datas = [cut_word.CutWord(data, 'zh').cut() for data in datas]  # 分词：[[word1,word2],[word1,word2]...]

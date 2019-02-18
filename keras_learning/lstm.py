@@ -90,7 +90,7 @@ def convert_sequence(datas, word2index):
 
 if __name__ == '__main__':
     '''准备数据'''
-    datas = databases.get_data_from_sql()
+    datas = databases.get_data_from_filter()
     freq_list = get_data_info(datas)
     word2index, index2word = service.lookup_table(freq_list)
     X, y = convert_sequence(datas, word2index)

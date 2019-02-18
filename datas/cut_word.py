@@ -34,8 +34,8 @@ class CutWord:
     def _clean_data(self):
         r = '[a-zA-z]+://[^\s]*'
         temp_comment = re.sub(r, '', self.comment)
-        temp_comment = re.sub(ur"[%s]+" % hanzi.punctuation, " ", temp_comment)  # 处理中文标点
-        temp_comment = re.sub(ur"[%s]+" % string.punctuation.decode('unicode-escape'), " ", temp_comment)  # 处理英文标点
+        # temp_comment = re.sub(ur"[%s]+" % hanzi.punctuation, " ", temp_comment)  # 处理中文标点
+        # temp_comment = re.sub(ur"[%s]+" % string.punctuation.decode('unicode-escape'), " ", temp_comment)  # 处理英文标点
         self.comment = temp_comment
 
     def _language_classify(self):
@@ -47,6 +47,7 @@ class CutWord:
     def _cut_word_zh(self):
         words = jieba.cut(self.comment)
         self.temp_list = [word for word in words if len(word.strip()) > 0]
+        # self.temp_list = jieba.cut(self.comment)
 
     def _cut_word_en(self):
         self._sentences_tokenizer()

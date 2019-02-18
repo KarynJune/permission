@@ -45,7 +45,7 @@ def get_data_from_sql():
 
 def get_data_from_zjy():
     """获取数据"""
-    mysql_cn = MySQLdb.connect(host='10.250.40.99', port=3306, user='root', passwd='88888888', db='zjy_test')
+    mysql_cn = MySQLdb.connect(host='10.250.30.158', port=3306, user='root', passwd='88888888', db='zjy_test')
     sql = "SELECT content,sort FROM language_filterdata where sort!=0"
     cursor = mysql_cn.cursor()
     cursor.execute(sql)

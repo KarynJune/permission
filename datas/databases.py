@@ -9,24 +9,13 @@ import os
 from datas import cut_word
 
 
-def get_data_from_sql():
+def get_data_from_filter():
     """
-    获取数据
+    获取分类好的数据
     [(['word1','word2'],label),(['word1','word2','word3'],label)]
     """
-    mysql_cn = MySQLdb.connect(host='10.250.40.99', port=3306, user='root', passwd='88888888', db='zjy_test')
+    mysql_cn = MySQLdb.connect(host='10.250.30.158', port=3306, user='root', passwd='88888888', db='zjy_test')
     sql = "SELECT content,sort FROM language_filterdata where sort!=0 and sort!=3"
-    cursor = mysql_cn.cursor()
-    cursor.execute(sql)
-    alldata = cursor.fetchall()
-    cursor.close()
-    mysql_cn.close()
-    return handle_datas(alldata)
-
-
-def get_data_self():
-    mysql_cn = MySQLdb.connect(host='192.168.42.112', port=3306, user='unimonitor', passwd='unimonitor', db='g37')
-    sql = "SELECT subject,comment_count FROM weibo where source like 'taptap%' and comment_count!=0 and length(subject)<200 limit 50"
     cursor = mysql_cn.cursor()
     cursor.execute(sql)
     alldata = cursor.fetchall()
@@ -60,8 +49,3 @@ def handle_datas(datas):
         data_list.append((words_list, label))
     return data_list
 
-
-if __name__ == '__main__':
-    datas = get_data_from_sql()
-    for data in datas:
-        print(data[0], data[1])
