@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>index</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/layer/2.3/layer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+            crossorigin="anonymous"></script>
+    <script src="/static/js/index.js"></script>
+</head>
+<style>
+    .table tr:hover{
+        background: #eeeeee;
+    }
+    .btn-xs{
+        margin: 3px 5px;
+    }
+</style>
+<body>
+<!--welcome! {{ request.user.username }}
+<hr>
+<form method="post" action="/data/">
+    {% for group in groups %}
+        <input type="checkbox" {% if group in request.user.groups.all %}checked{% endif %}>{{ group.name }}
+    {% endfor %}
+    <input type="submit" value="set group">
+</form>
+<hr>
+<form method="post" action="/data/">
+    {% csrf_token %}
+    <input type="hidden" name="name" value="some data...">
+    <input type="submit" value="create data">
+</form>
+<hr>
+<form method="get" action="/logout/">
+    <input type="submit" value="logout">
+</form>
+-->
+<div class="outer" style="margin: 80px auto;width: 1500px;">
+<div class="form-inline" style="position: fixed;top: 0;padding: 20px 0;background: #fff;width: 100%;">
+<div class="form-group">
+<input type="text" class="form-control" name="key" size="80" placeholder="查询...">
+<button type="button" id="emotionBtn" data-loading-text="预测中..." class="btn btn-success" autocomplete="off">
+    查询
+</button>
+    {% for sort in sorts %}
+        <button class="btn btn-primary"
+                onclick="sortDataBatch(this,'{{ sort.id }}')">
+            {{ sort.name }}
+        </button>
+    {% endfor %}
+</div>
+</div>
+
+
+<div class="row">
+    <div class="col-sm-6" id="pos_list"></div>
+    <div class="col-sm-6" id="neg_list"></div>
+</div>
+
+<table class="table table-bordered">
+    <tr>
+        <th></th>
+        <th>人工分类</th>
+        <th style="width: 180px;">发表日期</th>
+        <th>内容</th>
+        <th>渠道</th>
+        <th>评论id</th>
+        <th>操作<br></th>
+    </tr>
+    {% for data in datas %}
+        <tr>
+            <td><input type="checkbox" name="comment_check" onchange="checkClick(this)"></td>
+            <td width="120px" class="data_sort">{{ data.sort }}</td>
+{#            <td class="words"></td>#}
+            <td style="width: 150px;" class="data_date">{{ data.post_date }}</td>
+            <td class="data_content">{{ data.content }}</td>
+            <td class="data_source">{{ data.source }}</td>
+            <td class="data_unique_id">{{ data.unique_id }}</td>
+            <td style="width: 350px;">
+                {% for sort in sorts %}
+                    <button class="btn btn-primary"
+                            onclick="sortData(this,'{{ sort.id }}','{{ sort.name }}')">
+                        {{ sort.name }}
+                    </button>
+                {% endfor %}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+</div>
+<nav aria-label="Page navigation" style="position: fixed;top: 100px;right: 0;">
+    <input type="hidden" name="page" value="1">
+    <ul class="pagination">
+        <li>
+            <a href="/sort/{{ product_code }}/?page={{ page|add:-1 }}" aria-label="Previous">
+                <span aria-hidden="true">上一页</span>
+            </a>
+        </li>
+        <li>
+            <a href="/sort/{{ product_code }}/?page={{ page|add:1 }}" aria-label="Next">
+                <span aria-hidden="true">下一页</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
+</body>
+<script>
+    var csrf_token = '{{ csrf_token }}';
+    
+    function sortData(e,sort_id,sort_name, is_batch=false) {
+        var tr_obj = $(e).parents("tr");
+        var url = '/sort/data/';
+        $.ajax({
+            url: url,
+            async: false,
+            type: "POST",
+            data: {
+                "content": tr_obj.find(".data_content").text().toLowerCase(),
+                "source": tr_obj.find(".data_source").text(),
+                "sort": sort_id,
+                "comment_id": tr_obj.find(".data_unique_id").text(),
+                "post_date": tr_obj.find(".data_date").text(),
+                "product": '{{ product_code }}',
+                "csrfmiddlewaretoken": csrf_token,
+            },
+            success: function (res, status) {
+                if(!is_batch){
+                    layer.msg("添加成功");
+                }
+                tr_obj.find(".data_sort").text(sort_name);
+                $(e).prop("checked",false);
+                checkClick(e);
+                {#console.log(res)#}
+            }
+        });
+    }
+
+    function sortDataBatch(e,sort_id) {
+        var sort_name = $(e).text();
+        $("input[name=comment_check]").each(function (index,obj) {
+            if($(obj).is(":checked")) {
+                sortData($(obj), sort_id, sort_name, true);
+            }
+        });
+        layer.msg("批量添加成功");
+    }
+
+    function checkClick(e) {
+        var checked = $(e).is(":checked");
+        if(checked){
+            $(e).parents("tr").css("background","#ccc");
+        }else{
+            $(e).parents("tr").css("background","initial");
+        }
+    }
+</script>
+</html>

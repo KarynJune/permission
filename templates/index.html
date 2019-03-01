@@ -73,6 +73,7 @@
                 <option value="3">中性</option>
             </select>
         </th>
+        <th>商务分类</th>
         <th>发表日期</th>
         <th width="50px">星级</th>
         <th>内容</th>
@@ -82,17 +83,18 @@
         <tr>
             <td width="120px" class="predict-result">predict...</td>
 {#            <td class="words"></td>#}
-            <td style="width: 150px;">{{ data.myDate }}</td>
-            <td>{{ data.score }}</td>
-            <td class="predict-content">{{ data.myContent }}</td>
+            <td>{{ data.b_sort }}</td>
+            <td style="width: 150px;">{{ data.post_date }}</td>
+            <td>{{ data.star }}</td>
+            <td class="predict-content">{{ data.content }}</td>
             <td style="width: 300px;">
 {#                <button class="btn btn-default" onclick="sortClick('0', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">垃圾#}
                 </button>
                 <button class="btn btn-danger"
-                        onclick="sortClick('5', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">积极
+                        onclick="sortClick('5', '{{ data.source }}', '{{ data.post_date }}', '{{ data.content }}')">积极
                 </button>
                 <button class="btn btn-primary"
-                        onclick="sortClick('1', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">消极
+                        onclick="sortClick('1', '{{ data.source }}', '{{ data.post_date }}', '{{ data.content }}')">消极
                 </button>
                 {#                <button class="btn btn-success" onclick="sortClick('3', '{{ data.source }}', '{{ data.myDate }}', '{{ data.myContent }}')">中性</button>#}
             </td>

@@ -22,9 +22,12 @@ import views
 router = routers.DefaultRouter()
 router.register(r'data', views.SomeDataViewSet)
 router.register(r'filter/data', views.FilterDataViewSet)
+router.register(r'sort/data', views.SortDataViewSet)
 
 urlpatterns = [
     url(r'^', include(router.urls)),
     url(r'^emotion/', views.get_emotion_test),
     url(r'^retrain/', views.retrain),
+
+    url(r'^sort/(?P<product_code>\w+)', views.to_sort_index),
 ]

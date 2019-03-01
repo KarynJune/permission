@@ -21,38 +21,52 @@ import cut_word
 def get_data_from_sql():
     """获取数据"""
     mysql_cn = MySQLdb.connect(host='192.168.42.112', port=3306, user='unimonitor', passwd='unimonitor', db='g37')
-    sql = "SELECT subject FROM weibo where source like 'taptap%' and comment_count!=0 and " \
-          "post_date>='2018-10-1' and post_date<'2018-11-1' order by post_date"
+    sql = "SELECT data_content FROM facebook where source='taptap_review' and " \
+          "post_datetime>='2019-01-01' and post_datetime<'2019-02-01' order by post_datetime"
     cursor = mysql_cn.cursor()
     cursor.execute(sql)
     alldata = cursor.fetchall()
     cursor.close()
     mysql_cn.close()
-    r = '{机器型号:[\s\S]*?}|回复：[\s\S]*'
+    r = '{机器型号:[\s\S]*?}|回复：[\s\S]*|\n'
     alldata = [re.sub(r, '', data[0].decode("utf-8")) for data in alldata]
     return alldata
 
 
-def get_stop_list():
+def get_stop_list(file_name):
     """获取停用词列表"""
     stop_list = []
-    with codecs.open(os.path.dirname(os.path.realpath(__file__)) + "/dicts/stop_words.txt", 'r', encoding='utf8') as f:
+    with codecs.open(os.path.dirname(os.path.realpath(__file__)) + "/dicts/"+file_name+".txt", 'r', encoding='utf8') as f:
         while True:
-            line = f.readline()  # 逐行读取
+            line = f.readline().strip()  # 逐行读取
             if not line:
                 break
-            stop_list.append(line.strip()),
+            stop_list.append(line),
     return stop_list
 
 
 def get_cut_words(comments):
-    stop_words = get_stop_list()
+    stop_words = get_stop_list("stop_words")
+    positive_words = get_stop_list("positive_dict")
+    negative_words = get_stop_list("negative_dict")
     words = []
     for comment in comments:
+        print comment
         cut_words = cut_word.CutWord(comment, 'zh').cut()
-        # words += [word for word in cut_words if word not in stop_words]
-        words += cut_words
+        new_cut_words = [word for word in cut_words if word in positive_words or word in negative_words or word not in stop_words]
+        words += new_cut_words
+        print "-" * 50
+        print "cut words:", "/".join(new_cut_words)
+        print "=" * 100
     return words
+
+
+def get_cut_words2(comment):
+    stop_words = get_stop_list("stop_words")
+    positive_words = get_stop_list("positive_dict")
+    negative_words = get_stop_list("negative_dict")
+    words = cut_word.CutWord(comment).cut()
+    return [word for word in words if word in positive_words or word in negative_words or word not in stop_words]
 
 
 def test():
@@ -129,9 +143,37 @@ def bayes_test():
     print nltk.classify.accuracy(classifier, test_labeled_featuresets)
 
 
+def decision_tree_test():
+    '''文本分类-决策树'''
+    '''训练数据'''
+    boy_names = ["梓豪", "俊宇", "宇轩", "梓睿", "梓洋", "浩轩", "俊杰", "子轩", "浩然", "俊杰", "伟强", "思浩"]
+    girl_names = ["芷晴", "雨桐", "梓琳", "思颖", "梓淇", "梓瑜", "梓妍", "晓彤", "梓琪", "嘉欣", "丽娟", "丽珍", "少英"]
+    '''组成特征集，这里以第一个字和第二个字分别作为一个特征，并给特征集相对应的标签'''
+    labeled_featuresets = [({'fname': bname[0], 'sname': bname[1]}, 'boy') for bname in boy_names] + \
+                          [({'fname': gname[0], 'sname': gname[1]}, 'girl') for gname in girl_names]
+    '''开始训练'''
+    classifier = nltk.DecisionTreeClassifier.train(labeled_featuresets)
+    '''测试数据'''
+    test_names = ["丽晴", "俊杰", "子欣", "俊豪", "嘉琳", "空白"]
+    test_labeled_featuresets = [({'fname': '丽', 'sname': '晴'}, 'girl'), ({'fname': '俊', 'sname': '杰'}, 'boy'),
+                                ({'fname': '子', 'sname': '欣'}, 'girl'), ({'fname': '俊', 'sname': '豪'}, 'boy'),
+                                ({'fname': '嘉', 'sname': '琳'}, 'girl'), ({'fname': '空', 'sname': '白'}, 'boy')]
+    '''组成特征集'''
+    featuresets = [{'fname': tname[0], 'sname': tname[1]} for tname in test_names]
+    print classifier.labels()
+    print classifier.classify_many(featuresets)
+    print classifier.error(test_labeled_featuresets)
+    print classifier.pretty_format()
+    print classifier.leaf(test_labeled_featuresets)
+    print classifier.pseudocode()
+    print classifier.stump("fname", test_labeled_featuresets)
+
+
+
 if __name__ == '__main__':
     # test()
-    bayes_test()
+    # bayes_test()
+    decision_tree_test()
     """
     datas = get_data_from_sql()
     print "datas size:", len(datas)
@@ -153,3 +195,9 @@ if __name__ == '__main__':
     # for bigram in bigrams:
     #     print bigram[0], ",", bigram[1]
     """
+    """
+    datas = get_data_from_sql()
+    print "datas size:", len(datas)
+    words = get_cut_words(datas)
+    """
+

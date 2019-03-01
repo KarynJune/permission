@@ -15,7 +15,7 @@ jieba.load_userdict(os.path.dirname(os.path.realpath(__file__)) + "/dicts/yys_di
 
 class CutWord:
 
-    def __init__(self, comment, language):
+    def __init__(self, comment, language="zh"):
         self.comment = comment.lower()
         self.language = language
         self.temp_list = []
@@ -34,8 +34,8 @@ class CutWord:
     def _clean_data(self):
         r = '[a-zA-z]+://[^\s]*'
         temp_comment = re.sub(r, '', self.comment)
-        # temp_comment = re.sub(ur"[%s]+" % hanzi.punctuation, " ", temp_comment)  # 处理中文标点
-        # temp_comment = re.sub(ur"[%s]+" % string.punctuation.decode('unicode-escape'), " ", temp_comment)  # 处理英文标点
+        temp_comment = re.sub(ur"[%s]+" % hanzi.punctuation, " ", temp_comment)  # 处理中文标点
+        temp_comment = re.sub(ur"[%s]+" % string.punctuation.decode('unicode-escape'), " ", temp_comment)  # 处理英文标点
         self.comment = temp_comment
 
     def _language_classify(self):
