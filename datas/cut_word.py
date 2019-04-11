@@ -34,8 +34,11 @@ class CutWord:
     def _clean_data(self):
         r = '[a-zA-z]+://[^\s]*'
         temp_comment = re.sub(r, '', self.comment)
+        if isinstance(temp_comment, str):
+            temp_comment = temp_comment.decode("utf-8")
         temp_comment = re.sub(ur"[%s]+" % hanzi.punctuation, " ", temp_comment)  # 处理中文标点
-        temp_comment = re.sub(ur"[%s]+" % string.punctuation.decode('unicode-escape'), " ", temp_comment)  # 处理英文标点
+        temp_comment = re.sub(ur"[%s]+" % string.punctuation, " ", temp_comment)  # 处理英文标点
+        # print temp_comment
         self.comment = temp_comment
 
     def _language_classify(self):
@@ -132,8 +135,8 @@ class CutWord:
 
 
 if __name__ == '__main__':
-    comment = u"今天的天气真好……二周年回坑的游戏，蓝票150抽出了2个白藏主,还好3张紫票出了茨木童子和大天狗，加上换的妖刀姬，这游戏又能玩了"
-    # comment = "储值了没勾玉问题处理好没? 钱我就给了，勾玉呢? 有没在处理"
+    # comment = u"今天的天气真好！,,二周年回坑的游戏，蓝票150抽出了2个白藏主,还好3张紫票出了茨木童子和大天狗，加上换的妖刀姬，这游戏又能玩了"
+    comment = "我只想知道我曾经的账号为什么！换一个手机就没有了，同样的渠道同样是安卓系统为什么一换手机账号就变成一片空白了"
     # comment = "游戏还可以，除了bug很多，数学太难，但其他体验都很好，一生挚爱我的艾米丽。"
     # comment = "網路一直盪，中華電信說我的網路通暢，那到底是誰的問題？"
     # comment = 'Please tell me what is "slide to look around" in settings? What does it do?'

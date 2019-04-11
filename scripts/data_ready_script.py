@@ -23,29 +23,27 @@ def product_dict(product_id):
         222: "g66",
         12: "h55",
         18: "h52",
+        227: "g67",
     }.get(product_id)
 
 
 def get_raw_data():
-    sort_name = 'BUG'
+    sort_name = '好评'
     infos = CommentInfo.objects.filter(comment_type=sort_name)
     sort, created = Sort.objects.get_or_create(name=sort_name)
 
-    query_set_list = []
     for info in infos:
         product_code = product_dict(info.product_id)
-        if info.product_id != 12 or info.comment_id in []:
+        if info.product_id != 222 or info.comment_id in []:
             continue
         try:
             facebook = Facebook.objects.get(pk=info.comment_id)
-            query_set_list.append(
-                SortData(content=facebook.content, comment_id=facebook.unique_id, post_date=facebook.post_date,
-                         source=facebook.source, sort=sort, product=product_code))
+            SortData.objects.update_or_create(comment_id=facebook.unique_id,product=product_code,
+                                              defaults={"content":facebook.content, "post_date":facebook.post_date,"source":facebook.source, "sort":sort, "product":product_code})
             print facebook.content, info.comment_id
             print "-" * 100
         except Facebook.DoesNotExist:
             print "找不到原数据", "=" * 50, info.comment_id
-    # SortData.objects.bulk_create(query_set_list)
 
 
 if __name__ == '__main__':

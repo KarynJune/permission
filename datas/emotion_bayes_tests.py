@@ -361,7 +361,7 @@ def test2(X_train, X_test, y_train, y_test):
         ('tfidf', TfidfTransformer()),
         ('clf', MultinomialNB()),
     ])
-    # get_best_param(pipeline)
+    get_best_param(pipeline)
     pipeline.set_params(clf__alpha=1, tfidf__use_idf=False, vect__max_df=0.1, vect__max_features=None)
     pipeline.fit(X_train.cut_word, y_train)
     y_pred = pipeline.predict(X_train.cut_word)

@@ -31,7 +31,7 @@ def get_data_info(datas):
     return freq_list
 
 
-def lookup_table(freq_list):
+def lookup_table(freq_list, cut_size=720):
     """
     建立单词序列配置表
     :param freq_list:
@@ -39,7 +39,7 @@ def lookup_table(freq_list):
         word2index:{'的': 2, '了': 3, '我': 4,....., '帐关': 3700, '还卡顿': 3701, 'PAD': 0, 'UNK': 1}
         index2word:{2: '的', 3: '了', 4: '我'....., 3700: '帐关', 3701: '还卡顿', 0: 'PAD', 1: 'UNK'}
     """
-    MAX_FEATURES = len(freq_list) - 720  # 去掉词频低的部分数据
+    MAX_FEATURES = len(freq_list) - cut_size  # 去掉词频低的部分数据
     word2index = {x[0]: i + 2 for i, x in enumerate(freq_list.most_common(MAX_FEATURES))}
     word2index["PAD"] = 0
     word2index["UNK"] = 1
