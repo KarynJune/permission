@@ -15,7 +15,7 @@ Keras-Preprocessing==1.0.5
 kiwisolver==1.0.1
 matplotlib==2.2.3
 MySQL-python==1.2.5
-nltk==3.3
+nltk==3.4.5
 numpy==1.15.2
 pandas==0.23.4
 pyparsing==2.3.0
