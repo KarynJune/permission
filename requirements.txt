@@ -4,7 +4,7 @@ chardet==3.0.4
 cntk==2.6
 cycler==0.10.0
 Django==1.11.16
-djangorestframework==3.8.2
+djangorestframework==3.11.2
 enum34==1.1.6
 h5py==2.8.0
 idna==2.7
