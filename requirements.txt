@@ -28,5 +28,5 @@ scipy==1.1.0
 six==1.11.0
 snownlp==0.12.3
 Theano==1.0.3
-urllib3==1.23
+urllib3==1.26.5
 zhon==1.1.5
